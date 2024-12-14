@@ -11,21 +11,20 @@ import io
 import sys
 import os
 
-# Constants
 BATCH_SIZE = 32
 NUM_EPOCHS = 20
 LEARNING_RATE = 0.0005
 
 class C3ConnectionTable:
     def __init__(self):
-        # Table 1 from the paper
+
         self.table = torch.tensor([
-            [1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1],  # 0
-            [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1],  # 1
-            [1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1],  # 2
-            [0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1],  # 3
-            [0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1],  # 4
-            [0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1]   # 5
+            [1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1],  
+            [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1],  
+            [1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1],  
+            [0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1],  
+            [0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1],  
+            [0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1]   
         ], dtype=torch.float32)
 
 class RBFLayer(nn.Module):
@@ -34,27 +33,25 @@ class RBFLayer(nn.Module):
         self.centers = nn.Parameter(self.generate_centers(in_features, num_classes))
         
     def generate_centers(self, in_features, num_classes):
-        # Generate 7x12 bitmap for digits 0-9
         centers = torch.zeros(num_classes, in_features)
         for digit in range(num_classes):
-            # Create a 7x12 bitmap representation for each digit
+
             bitmap = self.create_digit_bitmap(digit)
-            # Convert to vector and store
+
             centers[digit] = bitmap.view(-1)
         return centers
     
     def create_digit_bitmap(self, digit):
-        # Simple bitmap representations - this should be enhanced based on DIGIT data
         bitmap = torch.zeros(7, 12)
         if digit == 0:
-            bitmap[1:6, 1:11] = 1  # Simple circle
+            bitmap[1:6, 1:11] = 1  
         elif digit == 1:
-            bitmap[:, 6] = 1  # Vertical line
-        # Add patterns for other digits...
+            bitmap[:, 6] = 1  
+
         return bitmap
     
     def forward(self, x):
-        # Compute Euclidean distances
+
         diff = x.unsqueeze(1) - self.centers.unsqueeze(0)
         distances = torch.sum(diff * diff, dim=2)
         return distances
@@ -63,11 +60,9 @@ class RBFLayer(nn.Module):
 class LeNet5(nn.Module):
     def __init__(self):
         super(LeNet5, self).__init__()
-        #data preprocess block
-        # Layers as per the paper
         self.c1 = nn.Conv2d(1, 6, kernel_size=5)
 
-        # MaxPooling instead of Average Pooling
+
         self.s2 = nn.MaxPool2d(kernel_size=2, stride=2)  
 
         #self.s2 = nn.AvgPool2d(kernel_size=2, stride=2)
@@ -76,9 +71,8 @@ class LeNet5(nn.Module):
         self.c5 = nn.Conv2d(16, 120, kernel_size=5)
         self.f6 = nn.Linear(120, 84)
 
-        # Dropout for regularization
         self.dropout = nn.Dropout(p=0.5)  
-         # Softmax activation for classification
+
         self.softmax = nn.Softmax(dim=1) 
         
         self.output = RBFLayer(84, 10)
@@ -132,7 +126,7 @@ def discriminative_loss(outputs, targets, j=0.1):
 #                 if param.grad is None:
 #                     continue
 #                 hkk = self.compute_hkk(loss, param)
-#                 step_size = self.eta / (self.mu + torch.abs(hkk))  # Added abs to prevent division by negative numbers
+#                 step_size = self.eta / (self.mu + torch.abs(hkk)) 
 #                 param.data.add_(-step_size * param.grad.data)
 
 class SDLMOptimizer:
@@ -147,28 +141,24 @@ class SDLMOptimizer:
                 param.grad.zero_()
     
     def step(self, loss):
-        # Compute gradients using backward
         loss.backward(retain_graph=True)
         
         with torch.no_grad():
             for param in self.parameters:
                 if param.grad is None:
                     continue
-                    
-                # Compute second derivatives
                 grad = param.grad
                 hkk = torch.zeros_like(param.data)
                 
-                # Update parameters using SDLM update rule
-                step_size = self.eta / (self.mu + torch.abs(hkk) + 1e-8)  # Added small constant for numerical stability
+
+                step_size = self.eta / (self.mu + torch.abs(hkk) + 1e-8) 
                 param.data.add_(-step_size * grad)
-        
-        # Zero gradients after update
+
         self.zero_grad()
     
-# Data preprocessing
+
 def preprocess_data(df):
-    # Convert images to tensors and resize to 32x32
+
     transform = transforms.Compose([
         transforms.Resize((32, 32)),
         transforms.ToTensor(),
@@ -177,7 +167,6 @@ def preprocess_data(df):
     
     images = []
     labels = []
-    
     for row in df.itertuples():
         img = Image.open(io.BytesIO(row.image["bytes"]))
         img_tensor = transform(img)
@@ -186,7 +175,6 @@ def preprocess_data(df):
     
     return torch.stack(images), torch.tensor(labels)
 
-# Training utilities
 def compute_accuracy(outputs, targets):
     _, predicted = torch.max(-outputs.data, 1)
     return (predicted == targets).sum().item() / targets.size(0)
@@ -199,7 +187,6 @@ def update_confusion_matrix(outputs, targets, confusion_matrix):
 
 
 def train_and_evaluate():
-    # Prepare data
     train_images, train_labels = preprocess_data(df_train)
     test_images, test_labels = preprocess_data(df_test)
     
@@ -208,17 +195,14 @@ def train_and_evaluate():
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
-    
-    # Initialize model and optimizer
     model = LeNet5()
     optimizer = SDLMOptimizer(model.parameters())
     
-    # Training history
     train_errors = []
     test_errors = []
     confusion_matrix = torch.zeros(10, 10)
     
-    # Training loop
+
     for epoch in range(NUM_EPOCHS):
         model.train()
         train_error = 0
@@ -228,17 +212,17 @@ def train_and_evaluate():
             outputs = model(data)
             loss = discriminative_loss(outputs, target)
             
-            # Step the optimizer
+
             optimizer.step(loss)
             
-            # Compute accuracy
+
             with torch.no_grad():
                 train_error += 1 - compute_accuracy(outputs, target)
             
         train_error /= len(train_loader)
         train_errors.append(train_error)
         
-        # Evaluation
+
         model.eval()
         test_error = 0
         confusion_matrix.zero_()
@@ -253,10 +237,12 @@ def train_and_evaluate():
         test_errors.append(test_error)
         
         print(f'Epoch {epoch+1}: Train Error: {train_error:.4f}, Test Error: {test_error:.4f}')
+
+    torch.save(model.state_dict(), "LeNet2.pth")
     
     return model, train_errors, test_errors, confusion_matrix
 
-# Visualization functions
+
 def plot_error_rates(train_errors, test_errors):
     plt.figure(figsize=(10, 6))
     plt.plot(train_errors, label='Training Error')
@@ -295,20 +281,20 @@ def find_most_confusing_examples(model, test_loader):
     
     return most_confusing
 
-# Main execution
+
 if __name__ == '__main__':
     model, train_errors, test_errors, confusion_matrix = train_and_evaluate()
     
-    # Plot results
+
     plot_error_rates(train_errors, test_errors)
     plot_confusion_matrix(confusion_matrix)
     
     test_images, test_labels = preprocess_data(df_test)
-    # Find most confusing examples
+
     test_loader = DataLoader(TensorDataset(test_images, test_labels), batch_size=BATCH_SIZE)
     confusing_examples = find_most_confusing_examples(model, test_loader)
     
-    # Display most confusing examples
+
     fig, axes = plt.subplots(2, 5, figsize=(15, 6))
     for i, ax in enumerate(axes.flat):
         example = confusing_examples[i]
