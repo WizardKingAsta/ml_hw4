@@ -39,13 +39,13 @@ def test(dataloader, model):
     print("Test Accuracy:", test_accuracy * 100)
 
 def main():
-    # Preprocess the test data
+  
     test_images, test_labels = preprocess_data(df_test)
     test_dataset = TensorDataset(test_images, test_labels)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    # Recreate the model architecture
-    from LeNet5_1_new import LeNet5  # Ensure the architecture is identical to training
+ 
+    from LeNet5_1_new import LeNet5  
     model = LeNet5()
 
     # Load the trained model weights
