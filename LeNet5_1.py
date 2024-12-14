@@ -232,6 +232,8 @@ def train_and_evaluate():
         test_errors.append(test_error)
         
         print(f'Epoch {epoch+1}: Train Error: {train_error:.4f}, Test Error: {test_error:.4f}')
+
+    torch.save(model.state_dict(), "LeNet1.pth")
     
     return model, train_errors, test_errors, confusion_matrix
 
